@@ -1,182 +1,130 @@
-import React from 'react';
-import styled from 'styled-components';
-import theme from '../config/theme';
+import { supabase } from '@/config/supabase';
 
-const matching = {
-  /**
-   * Add user to the matching queue
-   * @param {string} userId - User ID to add to queue
-   * @returns {Promise} - Promise resolving to queue status
-   */
-  addToQueue: async (userId) => {
-    try {
-      const supabase = require('../config/supabase').default;
-      
-      // Check if user is already in queue
-      const { data: existingQueue } = await supabase
-        .from('user_queue')
-        .select('*')
-        .eq('user_id', userId);
-      
-      if (existingQueue && existingQueue.length > 0) {
-        return {
-          success: true,
-          status: 'already_in_queue',
-          queueId: existingQueue[0].id
-        };
-      }
-      
-      // Add user to queue
-      const { data, error } = await supabase
-        .from('user_queue')
-        .insert([{ user_id: userId }])
+// Function to match users for chat
+export const matchUsers = async (userId) => {
+  try {
+    // Check if there are any users in the waiting pool
+    const { data: waitingUsers, error: fetchError } = await supabase
+      .from('waiting_pool')
+      .select('*')
+      .neq('user_id', userId)
+      .eq('matched', false)
+      .limit(1);
+    
+    if (fetchError) throw fetchError;
+    
+    if (waitingUsers && waitingUsers.length > 0) {
+      // Found a match, create a new chat
+      const { data: chat, error: chatError } = await supabase
+        .from('chats')
+        .insert([
+          { status: 'active' }
+        ])
         .select();
       
-      if (error) throw error;
+      if (chatError) throw chatError;
       
-      return {
-        success: true,
-        status: 'added_to_queue',
-        queueId: data[0].id
-      };
-    } catch (error) {
-      console.error('Error adding to queue:', error);
-      return {
-        success: false,
-        error: error.message
-      };
+      const chatId = chat[0].id;
+      
+      // Add both users to chat_participants
+      const { error: participantsError } = await supabase
+        .from('chat_participants')
+        .insert([
+          { chat_id: chatId, user_id: userId },
+          { chat_id: chatId, user_id: waitingUsers[0].user_id }
+        ]);
+      
+      if (participantsError) throw participantsError;
+      
+      // Update both users in waiting pool
+      const { error: updateError } = await supabase
+        .from('waiting_pool')
+        .update({ matched: true, chat_id: chatId })
+        .in('user_id', [userId, waitingUsers[0].user_id]);
+      
+      if (updateError) throw updateError;
+      
+      return { matched: true, chatId };
+    } else {
+      // No match found, add user to waiting pool
+      const { error: insertError } = await supabase
+        .from('waiting_pool')
+        .insert([
+          { user_id: userId, matched: false }
+        ]);
+      
+      if (insertError) throw insertError;
+      
+      return { matched: false };
     }
-  },
-  
-  /**
-   * Find a match for the user
-   * @param {string} userId - User ID to find match for
-   * @returns {Promise} - Promise resolving to match result
-   */
-  findMatch: async (userId) => {
-    try {
-      const supabase = require('../config/supabase').default;
-      
-      // Get oldest user in queue that isn't current user
-      const { data: queuedUsers, error } = await supabase
-        .from('user_queue')
-        .select('*')
-        .neq('user_id', userId)
-        .order('created_at', { ascending: true })
-        .limit(1);
-      
-      if (error) throw error;
-      
-      // No users in queue
-      if (!queuedUsers || queuedUsers.length === 0) {
-        return {
-          success: true,
-          status: 'no_match_found'
-        };
-      }
-      
-      const matchedUser = queuedUsers[0];
-      
-      // Create chat room
-      const { data: chatRoom, error: chatRoomError } = await supabase
-        .from('chat_rooms')
-        .insert([{
-          user1_id: userId,
-          user2_id: matchedUser.user_id,
-          is_saved: false,
-          both_agreed_to_save: false
-        }])
-        .select();
-      
-      if (chatRoomError) throw chatRoomError;
-      
-      // Remove both users from queue
-      await supabase
-        .from('user_queue')
-        .delete()
-        .in('user_id', [userId, matchedUser.user_id]);
-      
-      return {
-        success: true,
-        status: 'match_found',
-        chatRoomId: chatRoom[0].id,
-        matchedUserId: matchedUser.user_id
-      };
-    } catch (error) {
-      console.error('Error finding match:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  },
-  
-  /**
-   * Save connection between two users
-   * @param {string} chatRoomId - Chat room ID
-   * @param {string} userId - User ID requesting to save
-   * @returns {Promise} - Promise resolving to save status
-   */
-  saveConnection: async (chatRoomId, userId) => {
-    try {
-      const supabase = require('../config/supabase').default;
-      
-      // Get chat room
-      const { data: chatRoom, error } = await supabase
-        .from('chat_rooms')
-        .select('*')
-        .eq('id', chatRoomId)
-        .single();
-      
-      if (error) throw error;
-      
-      // Check if user is part of this chat room
-      if (chatRoom.user1_id !== userId && chatRoom.user2_id !== userId) {
-        return {
-          success: false,
-          error: 'User is not part of this chat room'
-        };
-      }
-      
-      // If this is the first user to agree to save
-      if (!chatRoom.is_saved) {
-        await supabase
-          .from('chat_rooms')
-          .update({ is_saved: true })
-          .eq('id', chatRoomId);
-        
-        return {
-          success: true,
-          status: 'waiting_for_other_user'
-        };
-      }
-      
-      // If both users have now agreed to save
-      await supabase
-        .from('chat_rooms')
-        .update({ both_agreed_to_save: true })
-        .eq('id', chatRoomId);
-      
-      // Create saved connection
-      await supabase
-        .from('saved_connections')
-        .insert([{
-          user1_id: chatRoom.user1_id,
-          user2_id: chatRoom.user2_id
-        }]);
-      
-      return {
-        success: true,
-        status: 'connection_saved'
-      };
-    } catch (error) {
-      console.error('Error saving connection:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
+  } catch (error) {
+    console.error('Error matching users:', error);
+    throw error;
   }
 };
 
-export default matching;
+// Function to get user's active chat
+export const getUserActiveChat = async (userId) => {
+  try {
+    // Get user's active chat
+    const { data, error } = await supabase
+      .from('chat_participants')
+      .select(`
+        chat_id,
+        chats:chat_id (
+          status,
+          created_at
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('chats.status', 'active')
+      .limit(1);
+    
+    if (error) throw error;
+    
+    if (data && data.length > 0) {
+      return { 
+        chatId: data[0].chat_id,
+        status: data[0].chats.status,
+        createdAt: data[0].chats.created_at
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting user active chat:', error);
+    throw error;
+  }
+};
+
+// Function to get chat partner
+export const getChatPartner = async (chatId, userId) => {
+  try {
+    // Get chat partner
+    const { data, error } = await supabase
+      .from('chat_participants')
+      .select(`
+        user_id,
+        profiles:user_id (
+          username
+        )
+      `)
+      .eq('chat_id', chatId)
+      .neq('user_id', userId)
+      .limit(1);
+    
+    if (error) throw error;
+    
+    if (data && data.length > 0) {
+      return {
+        id: data[0].user_id,
+        username: data[0].profiles?.username || 'Anonymous'
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting chat partner:', error);
+    throw error;
+  }
+};

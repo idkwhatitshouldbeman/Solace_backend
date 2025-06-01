@@ -1,88 +1,94 @@
-import React from 'react';
-import styled from 'styled-components';
-import theme from '../config/theme';
+import { BANNED_WORDS } from '@/config/banned-words';
 
-const validation = {
-  /**
-   * Validate email format
-   * @param {string} email - Email to validate
-   * @returns {boolean} - Whether email is valid
-   */
-  isValidEmail: (email) => {
-    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-    return emailRegex.test(email);
-  },
-  
-  /**
-   * Validate password strength
-   * @param {string} password - Password to validate
-   * @returns {object} - Validation result with strength and feedback
-   */
-  validatePassword: (password) => {
-    if (!password) {
-      return {
-        isValid: false,
-        strength: 'none',
-        feedback: 'Password is required'
-      };
-    }
-    
-    if (password.length < 8) {
-      return {
-        isValid: false,
-        strength: 'weak',
-        feedback: 'Password must be at least 8 characters long'
-      };
-    }
-    
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChars = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
-    const strength = 
-      (hasUppercase && hasLowercase && hasNumbers && hasSpecialChars) ? 'strong' :
-      (hasUppercase && hasLowercase && (hasNumbers || hasSpecialChars)) ? 'medium' :
-      'weak';
-    
-    let feedback = '';
-    
-    if (strength === 'weak') {
-      feedback = 'Password is weak. Consider adding uppercase letters, numbers, and special characters.';
-    } else if (strength === 'medium') {
-      feedback = 'Password is medium strength. Consider adding more variety for stronger security.';
-    }
-    
-    return {
-      isValid: strength !== 'weak',
-      strength,
-      feedback
-    };
-  },
-  
-  /**
-   * Validate age (13+ requirement)
-   * @param {boolean} isOver13 - User confirmation of being 13+
-   * @returns {boolean} - Whether age requirement is met
-   */
-  validateAge: (isOver13) => {
-    return isOver13 === true;
-  },
-  
-  /**
-   * Sanitize user input to prevent XSS
-   * @param {string} input - User input to sanitize
-   * @returns {string} - Sanitized input
-   */
-  sanitizeInput: (input) => {
-    if (!input) return '';
-    
-    return input
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
+// Function to validate email format
+export const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 };
 
-export default validation;
+// Function to validate password strength
+export const validatePassword = (password) => {
+  // Password must be at least 8 characters
+  if (password.length < 8) {
+    return {
+      valid: false,
+      message: 'Password must be at least 8 characters long'
+    };
+  }
+  
+  // Password should contain at least one number
+  if (!/\d/.test(password)) {
+    return {
+      valid: false,
+      message: 'Password must contain at least one number'
+    };
+  }
+  
+  // Password should contain at least one special character
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    return {
+      valid: false,
+      message: 'Password must contain at least one special character'
+    };
+  }
+  
+  return {
+    valid: true,
+    message: 'Password is strong'
+  };
+};
+
+// Function to validate chat message content
+export const validateChatMessage = (content) => {
+  // Message cannot be empty
+  if (!content || content.trim() === '') {
+    return {
+      valid: false,
+      message: 'Message cannot be empty'
+    };
+  }
+  
+  // Message cannot be too long
+  if (content.length > 1000) {
+    return {
+      valid: false,
+      message: 'Message is too long (maximum 1000 characters)'
+    };
+  }
+  
+  // Check for banned words
+  const hasBannedWords = BANNED_WORDS.some(word => 
+    content.toLowerCase().includes(word.toLowerCase())
+  );
+  
+  if (hasBannedWords) {
+    return {
+      valid: false,
+      message: 'Message contains inappropriate content',
+      flagged: true
+    };
+  }
+  
+  return {
+    valid: true,
+    message: 'Message is valid'
+  };
+};
+
+// Function to validate age (must be 18+)
+export const validateAge = (birthdate) => {
+  const today = new Date();
+  const birth = new Date(birthdate);
+  
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  
+  return {
+    valid: age >= 18,
+    message: age >= 18 ? 'Age verified' : 'You must be 18 or older to use this service'
+  };
+};

@@ -1,22 +1,66 @@
 export const BANNED_WORDS = [
-  // Profanity
-  'fuck', 'shit', 'damn', 'bitch',
-  
-  // Dating/hookup terms
-  'hook up', 'hookup', 'meet up', 'your place', 'my place',
-  'date me', 'boyfriend', 'girlfriend', 'single',
-  
-  // Off-platform contact
-  'instagram', 'snapchat', 'discord', 'telegram', 'kik',
-  'facebook', 'twitter', 'tiktok', 'whatsapp',
-  
-  // Contact info patterns (regex)
-  /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/, // phone numbers
-  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/, // emails
-];
-
-export const SEVERE_VIOLATIONS = [
-  // These result in immediate permanent ban
-  'kill yourself', 'kys', 'suicide',
-  // Add more severe terms
+  'fuck',
+  'shit',
+  'ass',
+  'bitch',
+  'cunt',
+  'dick',
+  'pussy',
+  'cock',
+  'nigger',
+  'faggot',
+  'retard',
+  'whore',
+  'slut',
+  'bastard',
+  'damn',
+  'hell',
+  'piss',
+  'crap',
+  'asshole',
+  'motherfucker',
+  'bullshit',
+  'fag',
+  'dyke',
+  'spic',
+  'kike',
+  'chink',
+  'gook',
+  'wetback',
+  'nazi',
+  'terrorist',
+  'suicide',
+  'kill',
+  'murder',
+  'rape',
+  'molest',
+  'bomb',
+  'shoot',
+  'attack',
+  'address',
+  'phone',
+  'email',
+  'password',
+  'credit card',
+  'ssn',
+  'social security',
+  'bank account',
+  'home address',
+  'school',
+  'location',
+  'meet up',
+  'meetup',
+  'meet me',
+  'snapchat',
+  'instagram',
+  'facebook',
+  'twitter',
+  'tiktok',
+  'discord',
+  'whatsapp',
+  'telegram',
+  'signal',
+  'kik',
+  'skype',
+  'zoom'
 ];

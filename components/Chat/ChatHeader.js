@@ -1,78 +1,76 @@
 import React from 'react';
 import styled from 'styled-components';
-import theme from '../../config/theme';
+import theme from '@/config/theme';
+import Button from '@/components/UI/Button';
 
-const ChatHeaderContainer = styled.div`
+const HeaderContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   background-color: ${theme.colors.primary};
-  border-radius: ${theme.borderRadius.large} ${theme.borderRadius.large} 0 0;
   border-bottom: 1px solid ${theme.colors.secondary};
+  
+  .dark-mode & {
+    background-color: ${theme.colors.darkMode.primary};
+    border-bottom-color: ${theme.colors.darkMode.secondary};
+  }
 `;
 
-const StatusContainer = styled.div`
+const PartnerInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
 `;
 
-const StatusDot = styled.div`
+const StatusIndicator = styled.div`
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: ${props => props.online ? theme.colors.success : theme.colors.lightText};
+  background-color: ${props => props.isConnected ? theme.colors.success : theme.colors.lightText};
 `;
 
-const StatusText = styled.span`
-  font-size: 0.9rem;
-  color: ${theme.colors.text};
+const PartnerName = styled.span`
   font-weight: 500;
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 0.75rem;
-`;
-
-const ActionButton = styled.button`
-  background-color: transparent;
-  border: none;
   color: ${theme.colors.text};
-  font-size: 0.9rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: ${theme.borderRadius.small};
-  transition: ${theme.transitions.default};
   
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-  
-  &:active {
-    transform: scale(0.98);
+  .dark-mode & {
+    color: ${theme.colors.darkMode.text};
   }
 `;
 
-const ChatHeader = ({ isConnected, onEndChat, onNewChat }) => {
+const HeaderActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const ChatHeader = ({ isConnected, partnerName, onNewChat, onEndChat, onSaveConnection }) => {
   return (
-    <ChatHeaderContainer>
-      <StatusContainer>
-        <StatusDot online={isConnected} />
-        <StatusText>
-          {isConnected ? 'Connected with Stranger' : 'Disconnected'}
-        </StatusText>
-      </StatusContainer>
-      <ActionButtons>
-        <ActionButton onClick={onNewChat}>
+    <HeaderContainer>
+      <PartnerInfo>
+        <StatusIndicator isConnected={isConnected} />
+        <PartnerName>
+          {isConnected ? partnerName : 'Not connected'}
+        </PartnerName>
+      </PartnerInfo>
+      
+      <HeaderActions>
+        <Button variant="secondary" onClick={onNewChat}>
           New Chat
-        </ActionButton>
-        <ActionButton onClick={onEndChat}>
-          End Chat
-        </ActionButton>
-      </ActionButtons>
-    </ChatHeaderContainer>
+        </Button>
+        
+        {isConnected && (
+          <>
+            <Button variant="secondary" onClick={onSaveConnection}>
+              Save Connection
+            </Button>
+            <Button variant="secondary" onClick={onEndChat}>
+              End Chat
+            </Button>
+          </>
+        )}
+      </HeaderActions>
+    </HeaderContainer>
   );
 };
 

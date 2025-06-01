@@ -1,97 +1,113 @@
 import React from 'react';
 import styled from 'styled-components';
-import theme from '../../config/theme';
+import theme from '@/config/theme';
+import ChatInput from '@/components/Chat/ChatInput';
 
-const Container = styled.div`
+const MessagesContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
+  padding: 1rem 0;
 `;
 
 const MessageBubble = styled.div`
-  max-width: 80%;
+  max-width: 70%;
   padding: 0.75rem 1rem;
   border-radius: ${theme.borderRadius.large};
-  margin-bottom: 0.5rem;
   position: relative;
-  word-wrap: break-word;
+  word-break: break-word;
   
-  ${props => props.isSender ? `
+  ${props => props.isCurrentUser ? `
     align-self: flex-end;
-    background-color: ${theme.colors.primary};
-    color: ${theme.colors.text};
+    background-color: ${theme.colors.accent};
+    color: white;
     border-bottom-right-radius: 0;
     
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      right: -10px;
-      width: 20px;
-      height: 20px;
-      background-color: ${theme.colors.primary};
-      clip-path: polygon(0 0, 0% 100%, 100% 100%);
+    .dark-mode & {
+      background-color: ${theme.colors.darkMode.accent};
     }
   ` : `
     align-self: flex-start;
-    background-color: ${theme.colors.white};
+    background-color: ${theme.colors.secondary};
     color: ${theme.colors.text};
     border-bottom-left-radius: 0;
-    box-shadow: ${theme.shadows.small};
     
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: -10px;
-      width: 20px;
-      height: 20px;
-      background-color: ${theme.colors.white};
-      clip-path: polygon(100% 0, 0% 100%, 100% 100%);
+    .dark-mode & {
+      background-color: ${theme.colors.darkMode.secondary};
+      color: ${theme.colors.darkMode.text};
     }
   `}
 `;
 
-const Timestamp = styled.span`
+const MessageTime = styled.span`
   font-size: 0.7rem;
-  color: ${theme.colors.lightText};
-  margin-top: 0.2rem;
-  align-self: ${props => props.isSender ? 'flex-end' : 'flex-start'};
+  color: ${props => props.isCurrentUser ? 'rgba(255, 255, 255, 0.7)' : theme.colors.lightText};
+  position: absolute;
+  bottom: -1.2rem;
+  ${props => props.isCurrentUser ? 'right: 0.5rem;' : 'left: 0.5rem;'}
+  
+  .dark-mode & {
+    color: ${props => props.isCurrentUser ? 'rgba(255, 255, 255, 0.7)' : theme.colors.darkMode.lightText};
+  }
 `;
 
-const MessageContainer = styled.div`
+const EmptyMessages = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: ${props => props.isSender ? 'flex-end' : 'flex-start'};
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+  
+  h3 {
+    margin-bottom: 1rem;
+    color: ${theme.colors.text};
+    
+    .dark-mode & {
+      color: ${theme.colors.darkMode.text};
+    }
+  }
+  
+  p {
+    color: ${theme.colors.lightText};
+    
+    .dark-mode & {
+      color: ${theme.colors.darkMode.lightText};
+    }
+  }
 `;
 
-const ChatMessage = ({ message, isSender }) => {
-  const formattedTime = new Date(message.created_at).toLocaleTimeString([], { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  });
-  
-  return (
-    <MessageContainer isSender={isSender}>
-      <MessageBubble isSender={isSender}>
-        {message.content}
-      </MessageBubble>
-      <Timestamp isSender={isSender}>{formattedTime}</Timestamp>
-    </MessageContainer>
-  );
-};
-
 const ChatMessages = ({ messages, currentUserId }) => {
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  if (!messages || messages.length === 0) {
+    return (
+      <EmptyMessages>
+        <h3>No messages yet</h3>
+        <p>Start the conversation by sending a message!</p>
+      </EmptyMessages>
+    );
+  }
+
   return (
-    <Container>
-      {messages.map(message => (
-        <ChatMessage 
-          key={message.id} 
-          message={message} 
-          isSender={message.sender_id === currentUserId} 
-        />
-      ))}
-    </Container>
+    <MessagesContainer>
+      {messages.map((message, index) => {
+        const isCurrentUser = message.sender_id === currentUserId;
+        
+        return (
+          <MessageBubble key={index} isCurrentUser={isCurrentUser}>
+            {message.content}
+            <MessageTime isCurrentUser={isCurrentUser}>
+              {formatTime(message.created_at)}
+            </MessageTime>
+          </MessageBubble>
+        );
+      })}
+    </MessagesContainer>
   );
 };
 

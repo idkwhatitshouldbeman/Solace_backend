@@ -15,9 +15,9 @@ const theme = {
       primary: '#3C3527',
       secondary: '#4D4639',
       accent: '#8D7B68',
-      text: '#F8F4EA',
+      text: '#F8F4EA', // White text for dark mode
       lightText: '#E8D9C5',
-      background: '#2A2520',
+      background: '#2A2520', // Dark background
     }
   },
   fonts: {

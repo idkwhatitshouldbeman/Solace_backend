@@ -1,104 +1,65 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import theme from '../config/theme';
+import theme from '@/config/theme';
+import { checkContentModeration } from '@/utils/moderation';
+import { BANNED_WORDS } from '@/config/banned-words';
 
 const useModeration = () => {
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState(null);
+  const [isModerating, setIsModerating] = useState(false);
+  const [moderationResult, setModerationResult] = useState(null);
   
-  const moderateMessage = async (message) => {
-    try {
-      const moderation = require('../utils/moderation').default;
-      
-      setLoading(true);
-      
-      // Client-side filtering
-      const clientResult = moderation.clientSideFilter(message);
-      
-      if (!clientResult.isValid) {
-        return {
-          isAllowed: false,
-          filteredMessage: clientResult.filteredMessage,
-          reason: clientResult.reason,
-          severity: 'low'
-        };
-      }
-      
-      // Check for severe violations
-      const severeResult = moderation.checkSevereViolations(message);
-      
-      if (severeResult.hasSevereViolation) {
-        return {
-          isAllowed: false,
-          filteredMessage: message,
-          reason: `Contains severe violation: ${severeResult.violationFound}`,
-          severity: 'high'
-        };
-      }
-      
-      // If message passes client-side checks, it's allowed to be sent
-      // AI moderation happens asynchronously after sending
-      return {
-        isAllowed: true,
-        filteredMessage: clientResult.filteredMessage,
-        reason: '',
-        severity: 'none'
-      };
-    } catch (error) {
-      setError(error.message);
-      return {
-        isAllowed: false,
-        filteredMessage: message,
-        reason: 'Moderation error',
-        severity: 'unknown'
-      };
-    } finally {
-      setLoading(false);
-    }
+  // Function to check content against banned words
+  const checkBannedWords = (content) => {
+    if (!content) return false;
+    
+    return BANNED_WORDS.some(word => 
+      content.toLowerCase().includes(word.toLowerCase())
+    );
   };
   
-  const queueForAIModeration = async (message, messageId) => {
+  // Function to moderate content using both local and API checks
+  const moderateContent = async (content) => {
     try {
-      const moderation = require('../utils/moderation').default;
-      const supabase = require('../config/supabase').default;
+      setIsModerating(true);
       
-      // Queue for AI moderation
-      const result = await moderation.queueForAIModeration(message);
+      // First check against banned words list (fast, local)
+      const hasBannedWords = checkBannedWords(content);
       
-      if (result.isFlagged && messageId) {
-        // Update message as flagged in database
-        await supabase
-          .from('messages')
-          .update({
-            is_flagged: true,
-            moderation_result: result
-          })
-          .eq('id', messageId);
-        
-        return {
-          isFlagged: true,
-          result
-        };
+      if (hasBannedWords) {
+        setModerationResult({
+          flagged: true,
+          reason: 'Content contains banned words',
+          categories: { 'banned-words': true }
+        });
+        return { flagged: true, reason: 'Content contains banned words' };
       }
       
-      return {
-        isFlagged: false,
-        result
-      };
+      // Then check with OpenAI moderation API (more comprehensive)
+      const apiResult = await checkContentModeration(content);
+      
+      setModerationResult(apiResult);
+      return apiResult;
     } catch (error) {
-      setError(error.message);
-      return {
-        isFlagged: false,
-        error: error.message
+      console.error('Moderation error:', error);
+      // Fallback to local check only if API fails
+      const hasBannedWords = checkBannedWords(content);
+      const result = {
+        flagged: hasBannedWords,
+        reason: hasBannedWords ? 'Content contains banned words' : null,
+        categories: hasBannedWords ? { 'banned-words': true } : {}
       };
+      
+      setModerationResult(result);
+      return result;
+    } finally {
+      setIsModerating(false);
     }
   };
   
   return {
-    loading,
-    error,
-    moderateMessage,
-    queueForAIModeration
+    moderateContent,
+    isModerating,
+    moderationResult
   };
 };
 

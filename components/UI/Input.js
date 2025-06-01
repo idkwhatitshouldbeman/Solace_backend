@@ -1,29 +1,29 @@
 import React from 'react';
 import styled from 'styled-components';
-import theme from '../../config/theme';
+import theme from '@/config/theme';
 
-const InputWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
+const InputContainer = styled.div`
   margin-bottom: 1.5rem;
-  width: 100%;
 `;
 
-const Label = styled.label`
-  font-size: 0.9rem;
+const InputLabel = styled.label`
+  display: block;
   margin-bottom: 0.5rem;
-  color: ${theme.colors.text};
   font-weight: 500;
+  color: ${theme.colors.text};
+  
+  .dark-mode & {
+    color: ${theme.colors.darkMode.text};
+  }
 `;
 
-const StyledInput = styled.input`
+const InputField = styled.input`
+  width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid ${props => props.error ? theme.colors.error : theme.colors.secondary};
   border-radius: ${theme.borderRadius.medium};
   font-family: ${theme.fonts.body};
-  font-size: 1rem;
   transition: ${theme.transitions.default};
-  background-color: ${props => props.disabled ? theme.colors.background : theme.colors.white};
   
   &:focus {
     outline: none;
@@ -31,13 +31,18 @@ const StyledInput = styled.input`
     box-shadow: 0 0 0 2px rgba(164, 144, 124, 0.2);
   }
   
-  &::placeholder {
-    color: ${theme.colors.lightText};
-    opacity: 0.7;
+  .dark-mode & {
+    background-color: ${theme.colors.darkMode.background};
+    color: ${theme.colors.darkMode.text};
+    border-color: ${props => props.error ? theme.colors.error : theme.colors.darkMode.secondary};
+    
+    &::placeholder {
+      color: ${theme.colors.darkMode.lightText};
+    }
   }
 `;
 
-const ErrorMessage = styled.span`
+const ErrorText = styled.div`
   color: ${theme.colors.error};
   font-size: 0.8rem;
   margin-top: 0.5rem;
@@ -47,18 +52,20 @@ const Input = ({
   label, 
   id, 
   error, 
+  type = 'text',
   ...props 
 }) => {
   return (
-    <InputWrapper>
-      {label && <Label htmlFor={id}>{label}</Label>}
-      <StyledInput 
+    <InputContainer>
+      {label && <InputLabel htmlFor={id}>{label}</InputLabel>}
+      <InputField 
         id={id}
+        type={type}
         error={error}
         {...props}
       />
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-    </InputWrapper>
+      {error && <ErrorText>{error}</ErrorText>}
+    </InputContainer>
   );
 };
 

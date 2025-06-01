@@ -1,5 +1,5 @@
 import { createGlobalStyle } from 'styled-components';
-import theme from '../config/theme';
+import theme from '@/config/theme';
 
 const GlobalStyles = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Quicksand:wght@300;400;500;600;700&display=swap');
@@ -71,6 +71,22 @@ const GlobalStyles = createGlobalStyle`
       
       &:hover {
         color: ${theme.colors.darkMode.lightText};
+      }
+    }
+
+    input, textarea, select {
+      background-color: ${theme.colors.darkMode.background};
+      color: ${theme.colors.darkMode.text};
+      border-color: ${theme.colors.darkMode.secondary};
+      
+      &::placeholder {
+        color: ${theme.colors.darkMode.lightText};
+      }
+    }
+
+    button {
+      &:not([class*="variant"]) {
+        color: ${theme.colors.darkMode.text};
       }
     }
   }
