@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
-import theme from '../config/theme';
-import GlobalStyles from '../components/GlobalStyles';
-import Navbar from '../components/UI/Navbar';
-import Dashboard from '../components/Dashboard/Dashboard';
+import theme from '@/config/theme';
+import GlobalStyles from '@/components/GlobalStyles';
+import Navbar from '@/components/UI/Navbar';
+import Dashboard from '@/components/Dashboard/Dashboard';
 
 const Layout = styled.div`
   min-height: 100vh;

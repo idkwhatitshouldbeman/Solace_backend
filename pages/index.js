@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
-import theme from '../config/theme';
-import GlobalStyles from '../components/GlobalStyles';
-import Navbar from '../components/UI/Navbar';
-import LandingPage from '../components/Landing/LandingPage';
+import theme from '@/config/theme';
+import GlobalStyles from '@/components/GlobalStyles';
+import Navbar from '@/components/UI/Navbar';
+import LandingPage from '@/components/Landing/LandingPage';
 
 const Layout = styled.div`
   min-height: 100vh;
