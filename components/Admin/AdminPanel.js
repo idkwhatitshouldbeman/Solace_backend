@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
-import theme from '../../config/theme';
-import Card from '../UI/Card';
-import Button from '../UI/Button';
-import Input from '../UI/Input';
+import theme from '@/config/theme';
+import Card from '@/components/UI/Card';
+import Button from '@/components/UI/Button';
+import Input from '@/components/UI/Input';
 
 const AdminContainer = styled.div`
   padding: 2rem;
@@ -181,7 +181,7 @@ const AdminPanel = () => {
         },
         {
           sender: 'user-456',
-          content: 'Yes, I love cooking! What's your favorite dish to make?',
+          content: 'Yes, I love cooking! What is your favorite dish to make?',
           timestamp: '2025-05-28T14:16:00Z',
           flagged: false
         },

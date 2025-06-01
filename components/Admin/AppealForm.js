@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
-import theme from '../../config/theme';
-import Card from '../UI/Card';
-import Button from '../UI/Button';
-import Input from '../UI/Input';
+import theme from '@/config/theme';
+import Card from '@/components/UI/Card';
+import Button from '@/components/UI/Button';
+import Input from '@/components/UI/Input';
 
 const AppealContainer = styled.div`
   padding: 2rem;
@@ -30,7 +30,7 @@ const AppealCard = styled(Card)`
   padding: 2rem;
 `;
 
-const AppealForm = styled.form`
+const AppealFormElement = styled.form`
   display: flex;
   flex-direction: column;
 `;
@@ -90,7 +90,7 @@ const AppealForm = () => {
           Our moderation team will review your appeal within 48 hours.
         </InfoText>
         
-        <AppealForm>
+        <AppealFormElement>
           <Input 
             label="Email Address" 
             id="appeal-email" 
@@ -119,7 +119,7 @@ const AppealForm = () => {
               Submit Appeal
             </Button>
           </AppealFormFooter>
-        </AppealForm>
+        </AppealFormElement>
       </AppealCard>
     </AppealContainer>
   );
