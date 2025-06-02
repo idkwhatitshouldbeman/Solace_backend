@@ -14,6 +14,12 @@ export const AuthProvider = ({ children }) => {
 
   // Initialize auth state
   useEffect(() => {
+    // Skip initialization during server-side rendering
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+
     // Get current session
     const getSession = async () => {
       setLoading(true);
