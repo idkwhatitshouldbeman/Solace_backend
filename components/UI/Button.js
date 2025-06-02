@@ -9,6 +9,8 @@ const ButtonContainer = styled.button`
   border-radius: ${theme.borderRadius.medium};
   cursor: pointer;
   transition: ${theme.transitions.default};
+  border: none;
+  outline: none;
   ${theme.flowElements.flowyButton}
   
   ${props => {
@@ -96,6 +98,7 @@ const ButtonContainer = styled.button`
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    pointer-events: none;
     
     &:hover {
       background-color: ${props => props.variant === 'accent' ? theme.colors.accent : 
