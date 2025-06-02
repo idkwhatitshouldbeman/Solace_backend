@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import theme from '@/config/theme';
 import GlobalStyles from '@/components/GlobalStyles';
@@ -89,16 +89,85 @@ const ErrorMessage = styled.div`
   font-size: 0.9rem;
 `;
 
+const SuccessMessage = styled.div`
+  color: ${theme.colors.success};
+  background-color: rgba(75, 181, 67, 0.1);
+  padding: 0.75rem;
+  border-radius: ${theme.borderRadius.medium};
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+`;
+
+const ResendLink = styled.button`
+  background: none;
+  border: none;
+  color: ${theme.colors.accent};
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  
+  .dark-mode & {
+    color: ${theme.colors.darkMode.accent};
+  }
+`;
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { signIn, loading } = useAuth();
+  const [successMessage, setSuccessMessage] = useState('');
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const { signIn, loading, authError, resendConfirmationEmail, clearAuthError } = useAuth();
   const router = useRouter();
+
+  // Check for auth error from context
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+      
+      // Check if the error is about email confirmation
+      if (authError.includes('Email not confirmed') || authError.includes('confirm your email')) {
+        setNeedsEmailConfirmation(true);
+      }
+    }
+    
+    return () => {
+      clearAuthError();
+    };
+  }, [authError, clearAuthError]);
+
+  // Check for success message in query params (e.g., after email confirmation)
+  useEffect(() => {
+    const { success, error: queryError } = router.query;
+    
+    if (success) {
+      setSuccessMessage(decodeURIComponent(success));
+      
+      // Clear the query params after displaying the message
+      const { pathname } = router;
+      router.replace(pathname, undefined, { shallow: true });
+    }
+    
+    if (queryError) {
+      setError(decodeURIComponent(queryError));
+      
+      // Check if the error is about email confirmation
+      if (queryError.includes('Email not confirmed') || queryError.includes('confirm your email')) {
+        setNeedsEmailConfirmation(true);
+      }
+      
+      // Clear the query params after displaying the error
+      const { pathname } = router;
+      router.replace(pathname, undefined, { shallow: true });
+    }
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
     
     try {
       const result = await signIn(email, password);
@@ -106,9 +175,34 @@ export default function Login() {
         router.push('/dashboard');
       } else {
         setError(result.error || 'Login failed');
+        
+        // Check if email confirmation is required
+        if (result.requiresEmailConfirmation) {
+          setNeedsEmailConfirmation(true);
+        }
       }
     } catch (err) {
       setError('An error occurred during login');
+      console.error(err);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      setError('Please enter your email address to resend the confirmation');
+      return;
+    }
+    
+    try {
+      const result = await resendConfirmationEmail(email);
+      if (result.success) {
+        setSuccessMessage(result.message || 'Confirmation email has been resent. Please check your inbox.');
+        setError('');
+      } else {
+        setError(result.error || 'Failed to resend confirmation email');
+      }
+    } catch (err) {
+      setError('An error occurred while resending the confirmation email');
       console.error(err);
     }
   };
@@ -126,7 +220,18 @@ export default function Login() {
             </LoginSubtitle>
           </LoginHeader>
           
-          {error && <ErrorMessage>{error}</ErrorMessage>}
+          {error && (
+            <ErrorMessage>
+              {error}
+              {needsEmailConfirmation && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  Didn't receive the email? <ResendLink onClick={handleResendConfirmation}>Resend confirmation email</ResendLink>
+                </div>
+              )}
+            </ErrorMessage>
+          )}
+          
+          {successMessage && <SuccessMessage>{successMessage}</SuccessMessage>}
           
           <LoginForm onSubmit={handleSubmit}>
             <Input

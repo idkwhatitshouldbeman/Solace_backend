@@ -89,17 +89,39 @@ const ErrorMessage = styled.div`
   font-size: 0.9rem;
 `;
 
+const SuccessMessage = styled.div`
+  color: ${theme.colors.success};
+  background-color: rgba(75, 181, 67, 0.1);
+  padding: 0.75rem;
+  border-radius: ${theme.borderRadius.medium};
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+`;
+
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const { signUp, loading } = useAuth();
+  const [successMessage, setSuccessMessage] = useState('');
+  const { signUp, loading, authError, clearAuthError } = useAuth();
   const router = useRouter();
+
+  // Check for auth error from context
+  React.useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+    
+    return () => {
+      clearAuthError();
+    };
+  }, [authError, clearAuthError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
     
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -109,7 +131,11 @@ export default function Signup() {
     try {
       const result = await signUp(email, password);
       if (result.success) {
-        router.push('/dashboard');
+        if (result.requiresEmailConfirmation) {
+          setSuccessMessage(result.message || 'Please check your email for a confirmation link to complete your registration.');
+        } else {
+          router.push('/dashboard');
+        }
       } else {
         setError(result.error || 'Signup failed');
       }
@@ -133,6 +159,7 @@ export default function Signup() {
           </SignupHeader>
           
           {error && <ErrorMessage>{error}</ErrorMessage>}
+          {successMessage && <SuccessMessage>{successMessage}</SuccessMessage>}
           
           <SignupForm onSubmit={handleSubmit}>
             <Input
